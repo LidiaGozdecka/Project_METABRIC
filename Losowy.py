@@ -262,6 +262,23 @@ for i in range(1000):
     )
     losowe.append(pd.DataFrame(r).T)
 
-raport_losowy=sum(losowe)/len(losowe)
-raport_losowy.to_csv('raport_losowy.csv')
+#raport_losowy=sum(losowe)/len(losowe)
+#raport_losowy.to_csv('raport_losowy.csv')
 
+from sklearn.metrics import confusion_matrix
+macierz_val_cat=confusion_matrix(y_train, y_perm)
+import matplotlib.pyplot as plt
+import matplotlib
+import seaborn as sns
+matplotlib.use('AGG')
+plt.figure(figsize=(10,4))
+k=['Died of Disease', 'Died of other causes', 'Living']
+sns.heatmap(macierz_val_cat, annot=True, fmt='d', xticklabels=k,
+    yticklabels=k, cbar=False)
+
+
+plt.ylabel('True')
+plt.xlabel('Predicted')
+plt.tight_layout()
+plt.savefig('mac_val_los.png')
+plt.close()

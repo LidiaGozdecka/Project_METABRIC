@@ -350,12 +350,30 @@ from sklearn.metrics import classification_report
 with open('xgb_clin.pkl', 'rb') as f:
     model=pickle.load(f)
 
-y_pred_test=model.predict(X_test_clin_final)
+# y_pred_test=model.predict(X_test_clin_final)
+#
+# classification_report_xgb_clin_test=classification_report(y_test_clin, y_pred_test, output_dict=True)
+#
+# classification_report_xgb_clin_test=pd.DataFrame(classification_report_xgb_clin_test).T
+# classification_report_xgb_clin_test.to_csv('metryki_xgb_clin_test.csv', sep=';')
 
-classification_report_xgb_clin_test=classification_report(y_test_clin, y_pred_test, output_dict=True)
-
-classification_report_xgb_clin_test=pd.DataFrame(classification_report_xgb_clin_test).T
-classification_report_xgb_clin_test.to_csv('metryki_xgb_clin_test.csv', sep=';')
 
 
+from sklearn.metrics import confusion_matrix
+y_pred_val=model.predict(X_val_clin_final)
+macierz_val_cat=confusion_matrix(y_val_clin, y_pred_val)
+import matplotlib.pyplot as plt
+import matplotlib
+import seaborn as sns
+matplotlib.use('AGG')
+plt.figure(figsize=(10,4))
+k=['Died of Disease', 'Died of other causes', 'Living']
+sns.heatmap(macierz_val_cat, annot=True, fmt='d', xticklabels=k,
+    yticklabels=k, cbar=False)
 
+
+plt.ylabel('True')
+plt.xlabel('Predicted')
+plt.tight_layout()
+plt.savefig('mac_val_xg_clin.png')
+plt.close()

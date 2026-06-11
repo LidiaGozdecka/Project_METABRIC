@@ -318,34 +318,96 @@ from sklearn.preprocessing import label_binarize
 import matplotlib.pyplot as plt
 
 
-y_prob_test = model.predict_proba(X_test_final)
+# y_prob_test = model.predict_proba(X_test_final)
+#
+#
+# classes = np.unique(y_test)
+# y_test_bin = label_binarize(y_test, classes=classes)
+#
+# plt.figure(figsize=(8, 6))
+#
+# for i in range(len(classes)):
+#     fpr, tpr, _ = roc_curve(
+#         y_test_bin[:, i],
+#         y_prob_test[:, i]
+#     )
+#
+#     roc_auc = auc(fpr, tpr)
+#
+#     plt.plot(
+#         fpr,
+#         tpr,
+#         label=f'Klasa {classes[i]} (AUC = {roc_auc:.3f})'
+#     )
+#
+#
+# plt.plot([0, 1], [0, 1], 'k--')
+#
+# plt.xlabel('False Positive Rate')
+# plt.ylabel('True Positive Rate')
+# plt.title('Krzywe ROC dla Random Forest')
+# plt.legend()
+# plt.tight_layout()
+# plt.savefig('roc_rf_test.png')
+#
+#
+#
+# from sklearn.metrics import confusion_matrix
+# y_pred_val=model.predict(X_val_final)
+# macierz_val_cat=confusion_matrix(y_val, y_pred_val)
+# import matplotlib.pyplot as plt
+# import matplotlib
+# import seaborn as sns
+# matplotlib.use('AGG')
+# plt.figure(figsize=(10,4))
+# sns.heatmap(macierz_val_cat, annot=True, fmt='d', xticklabels=np.unique(y_val),
+#     yticklabels=np.unique(y_val), cbar=False)
+# plt.ylabel('True')
+# plt.xlabel('Predicted')
+# plt.tight_layout()
+# plt.savefig('mac_val_rf.png')
+# plt.close()
 
+idx=np.random.choice(X[X['nottingham_prognostic_index']==2].index)
+pacjent_low=X.iloc[[idx]]
+pacjent_geny = pacjent_low[zmienne_do_pca]
+pacjent_reszta = pacjent_low.drop(columns=zmienne_do_pca)
 
-classes = np.unique(y_test)
-y_test_bin = label_binarize(y_test, classes=classes)
+pacjent_geny = gen_pipe.transform(pacjent_geny)
+pacjent_ica = ica.transform(pacjent_geny)
 
-plt.figure(figsize=(8, 6))
+pacjent_reszta = preprocessor.transform(pacjent_reszta)
+zmienne=['age_at_diagnosis','therapy_combo','type_of_breast_surgery']
+pacjent_low[zmienne]
+y[idx]
 
-for i in range(len(classes)):
-    fpr, tpr, _ = roc_curve(
-        y_test_bin[:, i],
-        y_prob_test[:, i]
-    )
+pacjent_final = np.hstack([
+    pacjent_reszta,
+    pacjent_ica
+])
 
-    roc_auc = auc(fpr, tpr)
+y_pred_plow=model.predict_proba(pacjent_final)
+y_true_plow=y[idx]
+y_true_plow
+y_pred_plow
 
-    plt.plot(
-        fpr,
-        tpr,
-        label=f'Klasa {classes[i]} (AUC = {roc_auc:.3f})'
-    )
+idx2=np.random.choice(X[X['nottingham_prognostic_index']==5].index)
+pacjent_high=X.iloc[[idx2]]
+pacjent_geny2 = pacjent_high[zmienne_do_pca]
+pacjent_reszta2 = pacjent_high.drop(columns=zmienne_do_pca)
 
+pacjent_geny2 = gen_pipe.transform(pacjent_geny2)
+pacjent_ica2 = ica.transform(pacjent_geny2)
 
-plt.plot([0, 1], [0, 1], 'k--')
+pacjent_reszta2 = preprocessor.transform(pacjent_reszta2)
 
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.title('Krzywe ROC dla Random Forest')
-plt.legend()
-plt.tight_layout()
-plt.savefig('roc_rf_test.png')
+pacjent_final2 = np.hstack([
+    pacjent_reszta2,
+    pacjent_ica2
+])
+y_pred_phigh=model.predict_proba(pacjent_final2)
+y_true_phigh=y[idx]
+y_true_phigh
+y_pred_phigh
+
+y_pred_phigh

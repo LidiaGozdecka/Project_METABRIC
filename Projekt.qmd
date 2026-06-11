@@ -20,7 +20,7 @@ editor:
 Tematem projektu jest analiza zbioru danych Breast Cancer Gene
 Expression Profiles (METABRIC) zawierającego informacje dotyczące cech
 klinicznych pacjentów oraz genomicznych oraz budowa modelu
-prognozującego przeżywalność pacjenta.
+przewidującego klasę zmiennej wynikowej *death from cancer* tzn. czy dana pacjentka umrze z powodu nowotworu, innych przyczyn (głównie medycznych), czy przeżyje.
 
 ## Opis zbioru
 
@@ -91,7 +91,7 @@ opisy = [
     "Liczba mutacji",
     "Indeks prognostyczny Nottingham",
     "Kod klasyfikacji OncoTree",
-    "Prognozowany czas przeżycia w miesiącach",
+    "Rzeczywisty czas przeżycia w miesiącach",
     "Status przeżycia",
     "Status receptorów progesteronowych",
     "Radioterapia (tak/nie)",
@@ -327,13 +327,7 @@ miesiącach dla różnych kombinacji terapii, z podziałem na grupy wiekowe
 oraz rodzaj przeprowadzonego zabiegu chirurgicznego. ![Czas przeżycia w
 zależności od terapii, wieku i rodzaju operacji](fig.png)
 
-Analiza prognozowanego czasu przeżycia wykazała, że wartości tej zmiennej różniły się pomiędzy grupami wiekowymi, typami zabiegów chirurgicznych oraz kombinacjami stosowanych terapii. Widoczna była duża zmienność wyników w obrębie poszczególnych kategorii, co wskazuje na heterogeniczny charakter badanej populacji.
-
-Zarówno w grupie pacjentek po zabiegu oszczędzającym pierś, jak i po mastektomii, nie zaobserwowano jednoznacznej przewagi jednej metody chirurgicznej pod względem przewidywanego czasu przeżycia. Sugeruje to, że rokowanie pacjentek zależy od współdziałania wielu czynników klinicznych oraz zastosowanego leczenia.
-
-Widoczne różnice pomiędzy poszczególnymi kombinacjami terapii wskazują, że sposób leczenia może wpływać na przewidywany czas przeżycia pacjentek. Jednocześnie szerokie rozstępy międzykwartylowe i obecność wartości odstających świadczą o znacznym zróżnicowaniu indywidualnego rokowania.
-
-Najwyższe mediany prognozowanego czasu przeżycia obserwowano dla wybranych kombinacji terapii zarówno w grupie pacjentek poddanych zabiegowi oszczędzającemu pierś, jak i po mastektomii, jednak zależności te nie były jednakowe we wszystkich grupach wiekowych.
+Wykres sugeruje, że rzeczywisty czas przeżycia zależy od kombinacji wieku, typu operacji i terapii, jednak zależności te nie tworzą jednego spójnego trendu. Widoczne są duże nakładania się rozkładów oraz zróżnicowanie wewnątrz grup, co wskazuje na silną heterogeniczność badanej populacji.
 
 ## Rozkład zmiennej wynikowej ze względu na rodzaj terapii
 
@@ -346,10 +340,13 @@ od powagi ich sytuacji.
 
 ## Lata przeżycia od diagnozy
 
-Dla pacjentów którzy zmarli w wyniku raka poniższy wykres przedstawia
-rozkład prawdopodobieństwa prognozowanych lat przeżycia od diagnozy
+Dla pacjentów którzy zmarli w wyniku choroby nowotworowej poniższy wykres przedstawia
+rozkład prawdopodobieństwa rzeczywistych lat przeżycia od diagnozy
 
 ![](Czas_przezycia.png)
+
+Rozkłady rzeczywistego czasu przeżycia dla poszczególnych kombinacji terapii wykazują znaczne nakładanie się, co sugeruje brak wyraźnej separacji pomiędzy analizowanymi grupami. W większości przypadków największa koncentracja obserwacji występowała w zakresie kilku pierwszych lat od diagnozy, natomiast dla części kombinacji terapii widoczny był dłuższy prawostronny ogon rozkładu, wskazujący na obecność pacjentów osiągających znacznie dłuższe czasy przeżycia.
+
 
 ## Korelacja zmiennych klinicznych
 
@@ -359,7 +356,7 @@ Zbadano współzmienność zmiennych klinicznych.
 
 Współczynniki korelacji nie przedstawiają znaczących wartośći, jednak
 wnioski które można wyciągnąć są raczej zgodne z ogólną intuicją. Na
-przykład średnia ilość prognozowanych miesięcy przeżycia zmniejsza się
+przykład średnia ilość rzeczywistych miesięcy przeżycia zmniejsza się
 wraz ze wzrostem liczby zajętych węzłów chłonnych (*overall survival
 months* \~ *lymph_nodes_examined_positive*), identycznie dla miesięcy
 przeżycia i rozmiaru guza (*overall survival months* \~ *tumor size*).
@@ -714,6 +711,8 @@ się.
 
 # Budowa modelu przewidującego poziom zmiennej wynikowej
 
+Zgodnie z wcześniejszym klasyfikowaniem braków jako *MCAR* lub *MAR* zastosowano preprocessing przed budową modelu, uzupełniający braki losowe medianą dla zmiennych numerycznych i modą dla kategorycznych. Dla zmiennych numerycznych zastosowano również standaryzację (mimo, że dla modeli drzewiastych nie jest to wymagane). Braki zależne od innych kategorycznych zaimputowano za pomocą iteracyjnego imputera o 20 iteracjach i ziarnie losowania ustawionym na bieżący rok.
+
 ## Cat boost
 
 Z powodu dużej ilości zmiennych kategorycznych zawierających po kilka
@@ -786,7 +785,7 @@ poniżej znajdują się ogólne metryki.
 
 ```{python}
 import pandas as pd
-tabela=pd.read_csv('total_metryki_model1.csv', sep=';')
+tabela=pd.read_csv('metryki_walidcja1.csv', sep=';')
 display(
     tabela.head(20).style
     .hide(axis='index')
@@ -844,11 +843,16 @@ Pierwsze drzewo:
 
 ![](cat_tree1.png)
 
-Ostateczne metryki:
+Macierz pomyłek:
+![](mac_val_cat.png)
+
+Ogólnie macierz pomyłek wskazuje, że model najskuteczniej identyfikuje pacjentów żyjących, natomiast największym wyzwaniem jest prawidłowe rozpoznanie zgonów niezwiązanych bezpośrednio z chorobą nowotworową.
+
+Metryki:
 
 ```{python}
 import pandas as pd
-tabela=pd.read_csv('total_metryki2.csv', sep=';')
+tabela=pd.read_csv('metryki_walidcja2.csv', sep=';')
 display(
     tabela.head(20).style
     .hide(axis='index')
@@ -877,9 +881,6 @@ model zawierający wyłącznie zmienne kliniczne.
 
 Parametry modelu są identyczne.
 
-Przebieg wartości metryk podczas treningu:
-
-![](Metryki_over_drzewa_clin.png)
 
 Lista wag zmiennych:
 
@@ -905,11 +906,17 @@ display(
 )
 ```
 
-Ostateczne metryki:
+Macierz pomyłek:
+![](mac_val_cat_clin.png)
+
+Model bardzo niechętnie przewiduje klase *Living*, mimo że występuje najczęściej w zbiorze walidacyjnym, za to bardzo często przewiduje klasę *Died of Disease*.
+
+
+Metryki:
 
 ```{python}
 import pandas as pd
-tabela=pd.read_csv('total_metryki_clin.csv', sep=';')
+tabela=pd.read_csv('metryki_walidcja_clin.csv', sep=';')
 display(
     tabela.head(20).style
     .hide(axis='index')
@@ -929,13 +936,13 @@ display(
 )
 ```
 
-Model zbudowany tylko na zmiennych klinicznych jest nieznacznie lepszy.
+Model zbudowany tylko na zmiennych klinicznych jest znacznie gorszy.
 
 ## Random Forest
 
 Konkurentem dla Cat boost jest Random Forest. Zastosowano porządkowe
 zakodowanie klas zmiennych kategorycznych, ponieważ OneHotEncoder
-zwiększył by wymiarowość.
+zwiększył by wymiarowość. Poza tym preprocessing różni się od tego dla Cat boost tym, że nie stosowano standaryzacji.
 
 Testowano różne kombinacje parametrów modelu, a ostateczną konfigurację wybrano na podstawie najwyższych wartości metryk uzyskanych na zbiorze walidacyjnym, i jak najmniejszym przeuczeniu.
 
@@ -987,7 +994,12 @@ display(
 )
 ```
 
-Ostateczne metryki:
+Macierz pomyłek:
+![](mac_val_rf.png)
+
+Model nie ma trudności z poprawną klasyfikacją, każda komórka na na przekątnek ma wyższą wartość niż suma komórek pozostałych z danego wiersza.
+
+Metryki:
 
 ```{python}
 import pandas as pd
@@ -1017,6 +1029,13 @@ może być porządkowe zakodowanie.
 Model zbudowany na identycznych parametrach tylko dla zmiennych
 klinicznych.
 
+Macierz pomyłek:
+![](mac_val_rf_clin.png)
+
+Tak jak dla całego zestawu danych model radzi sobie bardzo podobnie - ze względu na dokładność i rozróżnialność.
+
+Metryki
+
 ```{python}
 import pandas as pd
 tabela=pd.read_csv('metryki_rf_clin.csv', sep=';')
@@ -1039,7 +1058,7 @@ display(
 )
 ```
 
-Ponownie model zbudowany tylko na klinicznych jest lepszy.
+Model zbudowany tylko na klinicznych jest nieznacznie lepszy.
 
 Wagi cech:
 
@@ -1072,7 +1091,8 @@ Ponownie dominuje *overall_survival_months*.
 Kolejnym modelem będzie *XG Boost*. W tym wypadku nie
 tylko kategoryczne predyktory zostały zakodowane porządkowo ale również
 zmienna wyjściowa przyjmuje teraz wartości 0,1,2 odpowiednio dla *Died
-of Disease*, *Died of Other Causes*, *Living*.
+of Disease*, *Died of Other Causes*, *Living*. 
+Podobnie jak w przypadku Random Forest nie zastosowano skalowania zmiennych
 
 Parametry zostały dobrane tak jak poprzednio aby uzyskać jak najlepsze wyniki na zbiorze walidacyjnym.
 
@@ -1138,6 +1158,11 @@ display(
 
 Ponownie dominują te same cechy:
 
+Macierz pomyłek:
+![](mac_val_xg.png)
+
+Świetnie radzi sobie z przewidywaniem przeżywalności jednak przewidywanie zgonu z innych przyczyn niż choroba nowotworowa pozostawia wiele do życzenia - zbyt często takie obserwacje zostają zaklasyfikowane jako *Living*.
+
 Model zbudowany tylko na zmiennych klinicznych:
 
 ```{python}
@@ -1200,6 +1225,10 @@ display(
     ])
 )
 ```
+Macierz pomyłek:
+![](mac_val_xg_clin.png)
+
+Podobnie jak powyższy model z tym, że tym razem przypadki zgonu z innych przyczyn są częściej klasyfikowane jako śmierć z powodu nowotworu, ale rzadziej takie przypadki dostają klasę *Living*. Ogólnie przewidywanie klasy *Died of Other Causes* poprawiło się.
 
 Ponownie model zbudowany na klinicznych jest lepszy
 
@@ -1231,7 +1260,7 @@ display(
 )
 ```
 
-Losowy model jest bardzo słaby pod względem metryk.
+Losowy model jest bardzo słaby pod względem metryk, porównywalnie do Cat boost na klinicznych.
 
 # Porównanie modeli na zbiorze testowym
 
@@ -1243,7 +1272,7 @@ porównanie modeli na zbiorze testowym:
 ![](Por%C3%B3wnanie_metryk.png)
 
 Co ciekawe wbrew oczekiwaniom dodanie komponentów ICA i mutacji genowych
-poprawia model.
+poprawia model. Jeszcze naszym zdaniem ciekawsze jest skok jakości cat boost tylko na klinicznych.
 
 Precyzja przeżywalności to *Precision* dla klasy *Living*, ma za zadanie
 pokazywać jak bardzo należy się cieszyć prognozą - wyższe wartości
@@ -1267,13 +1296,59 @@ Model Rf:
 
 - dla pacjentów zmarłych z powodu raka w 76.6% przypadków przypisuje wyższe prawdopodobieństwo pacjentom rzeczywiście zmarłym z tego    powodu
 
+# Test na pacjentach ze zbioru
+
+Wybrano losową pacjentkę o niskim poziomie zmiennej *nottingham_prognostic_index* (dobrze rokująca wartość) i jedną z wysokim, po czym dokonano klasyfikacji za pomocą najlepszego modelu.
+
+Pacjentka o niskim poziomie zmiennej npi:
+
+- Wiek: 67
+
+- Operacja: Mastectomy
+
+- Terapia: brak
+
+- Stan: Śmierć w wyniku choroby nowotworowej
+
+-Przewidziano: 24% śmierć w wyniku choroby, 43% śmierć z innych przyczyn, 33% żyje.
+
+Model był raczej niepewny poprawnej odpowiedzi.
+
+
+Pacjentka o wysokim poziomie zmiennej npi:
+
+- Wiek: 65
+
+- Operacja: Mastectomy
+
+- Terapia: Hormonalna
+
+- Stan: Śmierć w wyniku choroby nowotworowej
+
+-Przewidziano: 19% śmierć w wyniku choroby, 38% śmierć z innych przyczyn, 43% żyje.
+
+Model był jeszce bardziej niepewny dobrej odpowiedzi.
+
+Model jest zbyt optymistyczny, najlepiej sprawdza się przy prawidłowej klasyfikacji pacjentów którzy mieli przeżyć.
+
+
+
 
 # Podobne prace
 
-Podobna praca na identycznym zbiorze została wykonana przez :https://www.kaggle.com/raghadalharbi z tym, że zmienną wynikową był *overall survival* więc był to problem dwuklasowy, w naszej pracy jest to problem trójklasowy. W wymienionym projekcie zastosowano podział na test i trening z walidacją krzyżową.
+Podobna praca na identycznym zbiorze została wykonana przez https://www.kaggle.com/raghadalharbi z tym, że zmienną wynikową był *overall survival* więc był to problem dwuklasowy, w naszej pracy jest to problem trójklasowy. W wymienionym projekcie zastosowano podział na test i trening z walidacją krzyżową.
 
 Ostateczne wnioski autora, wyniki i rekomendacje:
 
 *Using machine learning models on genetic data has the potential to improve our understanding of cancers and survival prediction. Huge open-source datasets are available for public to analyze and hopefully get some insights. The model with the best preformace was XGBoost with max_depth=5 and min_child_weight=1 that was trained with the full dataframe with the addition of all of the combination of all genetic data values. The accuacy score was 0.779 and the AUC was 0.76. To enhance this project, increase the number of samples, include mutations and raw genetic data into the modeling part, and maybe try some deep learning models.*
 
 Link do publikacji: https://www.kaggle.com/code/raghadalharbi/breast-cancer-survival-prediction-acc-0-779
+
+# Podsumowanie
+Porównanie modeli wykazało, że uwzględnienie informacji genetycznych wraz z danymi klinicznymi prowadziło do poprawy jakości predykcji względem modeli wykorzystujących wyłącznie dane kliniczne. Najlepsze wyniki uzyskano dla modeli wykorzystujących połączone dane kliniczne i informacje o mutacjach genowych po redukcji wymiarowości metodą FastICA.
+
+Uzyskane wyniki potwierdzają, że dane molekularne stanowią istotne źródło informacji wspomagające prognozowanie przebiegu choroby. Jednocześnie należy podkreślić, że przewidywanie przyczyny zgonu pacjentów z rakiem piersi pozostaje problemem złożonym, a na końcowy wynik wpływa wiele czynników, które nie zawsze są w pełni reprezentowane w dostępnych danych.
+
+# Dodatkowa literatura
+
+https://docs.google.com/document/d/14Kzt9FlHz5i1lGliaLM0_LI_2RxsXfNW2p_qiISvi74/edit?usp=sharing

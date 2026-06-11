@@ -348,7 +348,7 @@ from catboost import CatBoostClassifier
 # drugi model ten sam
 
 # from catboost import CatBoostClassifier
-# from catboost import Pool
+from catboost import Pool
 #
 # model = CatBoostClassifier(
 #      loss_function="MultiClass",
@@ -374,12 +374,12 @@ from catboost import CatBoostClassifier
 #     cat_features=cat_features
 #
 # )
-# val_pool = Pool(
-#     X_val_final,
-#     y_val,
-#     feature_names=mcar_num+mar_num + mcar_cat+mar_cat+ica_cols,
-#     cat_features=cat_features
-# )
+val_pool = Pool(
+     X_val_final,
+     y_val,
+     feature_names=mcar_num+mar_num + mcar_cat+mar_cat+ica_cols,
+     cat_features=cat_features
+)
 # model.fit(
 #     train_pool,
 #     eval_set=val_pool,
@@ -476,14 +476,28 @@ test_pool = Pool(
 )
 
 from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
 model=CatBoostClassifier()
 model.load_model('catboost_model2.cbm')
-y_pred_test=model.predict(test_pool)
-classification_report_c1_test=classification_report(
-    y_test,
-    y_pred_test,
-    output_dict=True
-)
-classification_report_c1_test=pd.DataFrame(classification_report_c1_test).T
-classification_report_c1_test.to_csv('metryki_c_test.csv', sep=';')
-
+#y_pred_test=model.predict(test_pool)
+# classification_report_c1_test=classification_report(
+#     y_test,
+#     y_pred_test,
+#     output_dict=True
+# )
+# classification_report_c1_test=pd.DataFrame(classification_report_c1_test).T
+# classification_report_c1_test.to_csv('metryki_c_test.csv', sep=';')
+y_pred_val=model.predict(val_pool)
+macierz_val_cat=confusion_matrix(y_val, y_pred_val)
+import matplotlib.pyplot as plt
+import matplotlib
+import seaborn as sns
+matplotlib.use('AGG')
+plt.figure(figsize=(10,4))
+sns.heatmap(macierz_val_cat, annot=True, fmt='d', xticklabels=np.unique(y_val),
+    yticklabels=np.unique(y_val), cbar=False)
+plt.ylabel('True')
+plt.xlabel('Predicted')
+plt.tight_layout()
+plt.savefig('mac_val_cat.png')
+plt.close()
